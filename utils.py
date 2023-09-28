@@ -12,7 +12,7 @@ def get_parameters(blocked_connection_timeout=3600):
     # if blocked > 1 hour, drop the connection
     return pika.ConnectionParameters(
         host=os.getenv("RABBITMQ_HOST"),
-        port=os.getenv("RABBITMQ_PORT"),
+        port=os.getenv("RABBITMQ_PORT", 5672),
         credentials=pika.PlainCredentials(os.getenv("RABBITMQ_USERNAME"), os.getenv("RABBITMQ_PASSWORD")),
         blocked_connection_timeout=blocked_connection_timeout,
     )
