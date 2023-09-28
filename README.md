@@ -51,7 +51,7 @@ for i in range(100):
 
 # OR we can also use the `send_message` function for more advanced usage
 for i in range(100):
-    p.send_message(exchange='', routing_key='task_queue', msg_body='...')
+    p.send_message(exchange='', routing_key='task_queue', body='...')
     # no time.sleep() here to showcase 0 wait time between sending messages
 
 # TODO: wait for sigterm here
