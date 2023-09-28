@@ -103,3 +103,33 @@ for i in range(100):
 
 p.stop()
 ```
+
+### Receiving Messages
+
+To receive messages, create an object of class `lapinmq.Consumer` with the queue name and a task function. One can also pass in the number of workers (default is 1).
+
+The task function takes in the received message as an argument and must return one of the 4 statuses below:
+- MessageStatus.SUCCESS: if the processing of the message succeeded and the message should be deleted from the queue.
+- MessageStatus.FAIL_RETRY_LATER : if the processing of the message failed and the message should be re-tried later.
+- MessageStatus.FAIL_DO_NOT_RETRY : if the processing of the message failed and the message should not be re-tried later.
+- MessageStatus.HANDLED_VIA_CALLBACK : for advanced usage, more on this later
+
+If the function raises an exception, that case is treated similar to FAIL_RETRY_LATER
+
+```py
+from lapinmq.message import MessageStatus
+from lapinmq.consumer import Consumer
+
+def task(message):
+    body = message.body.decode()
+    # process the received message body
+    return MessageStatus.SUCCESS # or perhaps FAIL_RETRY_LATER or FAIL_DO_NOT_RETRY
+
+c = Consumer(queue_name='task_queue', task_function=task, worker_threads=3) # this consumer can process 3 messages in parallel
+c.start()
+
+# TODO: wait for sigterm here
+
+c.stop()
+```
+
