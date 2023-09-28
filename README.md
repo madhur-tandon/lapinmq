@@ -70,3 +70,36 @@ While [this article](https://www.cloudamqp.com/blog/publishing-throughput-asynch
 3. For the other approach, we can give all 100 notes at once to our friend, and it is upto the friend to give confirmations for the notes -- which he can either give for each note, or in batches or a mix of both. An example can be confirming that he received the first 70 notes, then 1 note, then 1 note, then 25 notes, then 2 notes and then 1 last note i.e. giving 6 confirmations for a total of 100 notes. The only problem is, we don't know when these confirmations will arrive, thus the term asynchronous.
 
 The library has both kinds of publishers and extends help with callbacks if one wishes to use the asynchronous publisher while taking care of solving some timing issues (should be more clear in the upcoming pipeline example).
+
+## Usage
+
+Ensure that the following environment variables are set before using the utilities below:
+- RABBITMQ_HOST: host address for where the RabbitMQ server can be accessed
+- RABBITMQ_PORT: port for the RabbitMQ server (default is 5672)
+- RABBITMQ_USERNAME: username for the RabbitMQ server
+- RABBITMQ_PASSWORD: password for the RabbitMQ server
+
+### Sending Messages
+
+```py
+import time
+from lapinmq.publisher import Publisher
+
+p = Publisher(kind="sync") # or perhaps p = Publisher(kind="async")
+p.start()
+
+for i in range(100):
+    p.send_message_to_queue(queue_name='task_queue', body='...')
+    # if the publisher is async, can also pass callbacks i.e.
+    # p.send_message_to_queue(queue_name='task_queue', body='...', callbacks={})
+    time.sleep(300) # 5 minutes in seconds, to showcase long wait times between sending messages
+
+# OR we can also use the `send_message` function for more advanced usage
+for i in range(100):
+    p.send_message(exchange='', routing_key='task_queue', msg_body='...')
+    # no time.sleep() here to showcase 0 wait time between sending messages
+
+# TODO: wait for sigterm here
+
+p.stop()
+```
