@@ -80,7 +80,11 @@ def task(message):
     # process the received message body
     return MessageStatus.SUCCESS # or perhaps FAIL_RETRY_LATER or FAIL_DO_NOT_RETRY
 
-c = Consumer(queue_name='task_queue', task_function=task, worker_threads=3) # this consumer can process 3 messages in parallel
+c = Consumer(
+    queue_name='task_queue',
+    task_function=task,
+    worker_threads=3 # this consumer can process 3 messages in parallel
+)
 c.start()
 
 # TODO: wait for sigterm here
