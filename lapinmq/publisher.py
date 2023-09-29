@@ -2,7 +2,7 @@ import pika
 import functools
 from pika.spec import Basic
 import threading
-from utils import get_parameters, alert_and_crash
+from lapinmq.utils import get_parameters, alert_and_crash
 
 class SyncPublisher:
     def __init__(self):

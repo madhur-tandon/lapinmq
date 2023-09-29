@@ -3,8 +3,8 @@ import threading
 import functools
 from collections import deque
 
-from utils import get_parameters, alert_and_crash
-from message import InMemoryMessage, MessageStatus
+from lapinmq.utils import get_parameters, alert_and_crash
+from lapinmq.message import InMemoryMessage, MessageStatus
 
 class Consumer:
     def __init__(self, queue_name, task_function, worker_threads=1):
