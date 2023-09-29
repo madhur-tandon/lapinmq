@@ -96,6 +96,39 @@ assert sigterm_received
 c.stop()
 ```
 
+---
+
+**Note**: The `p.start()` and `c.start()` methods for the Publisher and Consumer class respectively
+spawn a `daemon` thread underneath. This means that the script that calls these methods has to have some
+waiting mechanism. Otherwise, if the main thread exits, the publishing / consuming will stop as well.
+
+In the examples above, the waiting mechanism is listening for a SIGTERM.
+
+An alternate usage might be to sleep for a certain time:
+
+```py
+p.start() # OR c.start()
+
+print("will terminate after 10 mins")
+time.sleep(600)
+
+p.stop() # OR c.stop()
+```
+
+But, the following example will not work:
+
+```py
+p.start() # OR c.start()
+
+print("main thread exiting now")
+```
+
+since here, after the main thread exits, the daemon thread also exits i.e. we have stopped publishing / consuming messages after displaying `main thread exiting now` on stdout.
+
+Lastly, since queues are usually used in ever-running applications such as a web-server, the main thread by definition never exits. Thus, the lack of waiting mechanism is really not a problem there.
+
+---
+
 ### Advanced: Consumer that is also a Publisher
 
 Consider two queues -- a source queue from which a consumer gets a message and thereafter, it processes it and sends a message (same or another) to a destination queue, thus also acting as a publisher.
