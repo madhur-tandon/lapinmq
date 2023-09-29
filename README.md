@@ -185,6 +185,12 @@ As an example, assuming a queue has 1000 messages, and 2 consumers, each of them
 
 To extract most performance, our first consumer should spawn 2 threads to be able to process these 2 messages in parallel. As soon as one of the 2 messages is processed, the first consumer receives another message (so that at any moment, the number of messages in RAM are at most 2 for this consumer), and the idle thread should pick it up (instead of creating a new thread for each new message) -- ensuring that the number of threads always remain 2, picking up new messages as soon as they are done with previous ones.
 
+**Conclusion**: Essentially, the consumer for RabbitMQ also implements the
+
+_competing consumers pattern (where threads are waiting on messages to arrive) but at the OS level_
+
+i.e. threads are the consumers for the RabbitMQ's consumer's internal queue which stores N number of messages in RAM, determined by the prefetch count.
+
 #### 3. Synchronous vs Asynchronous Publisher Confirmations
 
 While [this article](https://www.cloudamqp.com/blog/publishing-throughput-asynchronous-vs-synchronous.html) gives a great overview about the topic, a simple analogy can also help:
