@@ -328,10 +328,6 @@ The FAQ [here](https://pika.readthedocs.io/en/stable/faq.html) also describes th
 
 Thus, this potential improvement is not possible with `pika`.
 
-### Connection Pooling
-
-TODO
-
 ## Appendix
 
 ### Some concepts in simple words:
