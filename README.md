@@ -4,6 +4,8 @@ Author: Madhur Tandon
 
 _lapin_ ~ _rabbit_ in french
 
+Install via `pip install lapinmq`
+
 ## TLDR
 **lapinmq** consists of utilities for RabbitMQ (or any other AMQP protocol compatible message broker) following best practices such as:
 - Long living consumers and publishers, with their heartbeats in background
