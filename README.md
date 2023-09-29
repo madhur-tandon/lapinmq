@@ -96,6 +96,153 @@ assert sigterm_received
 c.stop()
 ```
 
+### Advanced: Consumer that is also a Publisher
+
+Consider two queues -- a source queue from which a consumer gets a message and thereafter, it processes it and sends a message (same or another) to a destination queue, thus also acting as a publisher.
+
+**Note**: source and destination queues can refer to the same queue, but the terminology is used so as to understand the concept.
+
+Essentially, the `task()` function is also responsible for sending a message to the destination queue.
+
+But, we only want to acknowledge (/delete) message from the source queue if and only if the message to the destination queue has reached and we have received a delivery confirmation of it from the broker.
+
+#### Synchronous Publisher
+
+In this case, we won't be able to send a message to the broker unless a confirmation has arrived for the previous message being sent. This gives strong guarantees but can be significantly slower in high network latency scenarios.
+
+```py
+from lapinmq.message import MessageStatus
+from lapinmq.consumer import Consumer
+from lapinmq.publisher import Publisher
+from lapinmq.utils import wait_for_sigterm
+
+p = Publisher(kind="sync")
+p.start()
+
+def task(message):
+    body = message.body.decode()
+
+    # process the received message body
+
+    # send a message to the destination queue
+    p.send_message_to_queue(queue_name='destination_queue', body='...')
+
+    return MessageStatus.SUCCESS # or perhaps FAIL_RETRY_LATER or FAIL_DO_NOT_RETRY
+
+c = Consumer(
+    queue_name='task_queue',
+    task_function=task,
+    worker_threads=3 # this consumer can process 3 messages in parallel
+)
+c.start()
+
+sigterm_received = wait_for_sigterm()
+assert sigterm_received
+
+c.stop()
+p.stop()
+```
+
+#### Asynchronous Publisher
+
+In this case, we don't know when the broker will give confirmations for the messages that were sent to it. However, as soon as we receive a delivery confirmation from the broker, a callback is triggered. We can send acknowledgement to the source queue inside this callback. This mechanism helps resolve timing issues since we should only acknowledge the message from the source queue **after** a delivery confirmation for the sent message is received.
+
+The functions to `acknowledge`, `reject` or `reject with retry` are available inside the message object as `message.ack`, `message.reject`, `message.reject_retry`
+
+```py
+from lapinmq.message import MessageStatus
+from lapinmq.consumer import Consumer
+from lapinmq.publisher import Publisher
+from lapinmq.utils import wait_for_sigterm
+
+p = Publisher(kind="async")
+p.start()
+
+def task(message):
+    body = message.body.decode()
+
+    # process the received message body
+
+    # send a message to the destination queue
+    p.send_message_to_queue(
+        queue_name='destination_queue',
+        body='...',
+        callbacks={
+            # when the broker confirms that message has been sent to the destination queue,
+            # send an acknowledgement to the source queue
+            'ack_callback': message.ack,
+            # when the broker confirms that message has not been sent to the destination queue,
+            # reject the message from the source queue and try again later
+            'nack_callback': message.reject_retry,
+        })
+
+    # callbacks are responsible for various kinds of acknowlegements to the source queue
+    return MessageStatus.HANDLED_VIA_CALLBACK
+
+c = Consumer(
+    queue_name='task_queue',
+    task_function=task,
+    worker_threads=3 # this consumer can process 3 messages in parallel
+)
+c.start()
+
+sigterm_received = wait_for_sigterm()
+assert sigterm_received
+
+c.stop()
+p.stop()
+```
+
+One can of course pass any function in these callbacks, but ideally, the use-case is to send acknowledgements to the source queue. The only condition is that the function being passed inside the callbacks shouldn't accept any arguments. Functions that accept arguments can be converted to functions that take 0 arguments using the `functools.partial` module.
+
+```py
+import json
+from functools import partial
+from lapinmq.publisher import Publisher
+
+p = Publisher(kind="async")
+p.start()
+
+def task(message):
+    body = message.body.decode()
+    value = json.loads(body).get("eta")
+    
+    def custom_callback(val):
+        # increment some metric
+        counter.increment(val)
+        # send acknowledgement to the source queue
+        message.ack()
+
+    custom_fn = partial(custom_callback, value)
+
+    # send a message to the destination queue
+    p.send_message_to_queue(
+        queue_name='destination_queue',
+        body='...',
+        callbacks={
+            # when the broker confirms that message has been sent to the destination queue,
+            # call the custom_callback function that also sends the acknowledgement to the source queue
+            'ack_callback': custom_fn,
+            'nack_callback': message.reject_retry,
+        })
+
+    return MessageStatus.HANDLED_VIA_CALLBACK
+
+
+c = Consumer(
+    queue_name='task_queue',
+    task_function=task,
+    worker_threads=3 # this consumer can process 3 messages in parallel
+)
+c.start()
+
+sigterm_received = wait_for_sigterm()
+assert sigterm_received
+
+c.stop()
+p.stop()
+```
+
 ## Potential Improvements
 
 ### Connection Multiplexing with Multiple Channels
