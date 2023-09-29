@@ -29,4 +29,4 @@ jobs:
       - name: Publish to PyPI
         run: |
           pip install twine
-          twine upload --config-file ~/.pypirc dist/*
+          twine upload --config-file .pypirc dist/*
