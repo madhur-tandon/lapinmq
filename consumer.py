@@ -104,7 +104,6 @@ class Consumer:
             except Exception:
                 in_memory_message.reject_retry()
                 ret = None
-            
             if ret == MessageStatus.SUCCESS:
                 in_memory_message.ack()
             elif ret == MessageStatus.FAIL_DO_NOT_RETRY:

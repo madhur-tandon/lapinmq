@@ -45,9 +45,13 @@ class SyncPublisher:
         self.connection.process_data_events(time_limit=0)
 
         self.start_publishing_thread.join()
+        print("Stopped publishing messages")
 
         self.channel.close()
+        print("Channel closed")
+
         self.connection.close()
+        print("Connection closed")
 
     def send_message(self, exchange, routing_key, body, expiration=None):
         publish_fn = functools.partial(
@@ -98,20 +102,24 @@ class ASyncPublisher:
         self.channel = None
     
     def on_connection_open(self, connection):
+        print("Connection opened")
         self.connection.channel(on_open_callback=self.on_channel_open)
 
     def on_channel_open(self, channel):
+        print("Channel opened")
         self.channel = channel
         self.channel.confirm_delivery(self.on_delivery_confirmation, self.on_confirm_ok)
         self.channel.add_on_return_callback(self.on_channel_return)
         self.channel.add_on_close_callback(self.on_channel_closed)
     
     def on_confirm_ok(self, frame):
+        print("Turned on Publisher Confirmations")
         with self.publisher_lock:
             self.ready = True
             self.publisher_condvar.notify_all()
 
     def on_channel_return(self, ch, method, properties, body):
+        # let's abort and crash the publisher
         alert_and_crash("Message is unroutable, no queue was bound to the "
                         "combination of exchange and routing key supplied.")
 
@@ -122,11 +130,13 @@ class ASyncPublisher:
 
         def call_ack_or_nack_callback(confirmation_type, tag):
             if isinstance(confirmation_type, Basic.Ack):
+                print(f"Received an ACK for message #{tag} from the broker.")
                 ack_callback = self.ack_callbacks.get(tag)
                 if ack_callback is not None:
                     ack_callback()
                 del self.ack_callbacks[tag]
             elif isinstance(confirmation_type, Basic.Nack):
+                print(f"Received a NACK for message #{tag} from the broker.")
                 nack_callback = self.nack_callbacks.get(tag)
                 if nack_callback is not None:
                     nack_callback()
@@ -145,9 +155,11 @@ class ASyncPublisher:
                 del self.messages_with_pending_confirmations[delivery_tag]
 
     def on_channel_closed(self, channel, reason):
+        print(f"Channel was closed: {reason}")
         self.connection.ioloop.add_callback_threadsafe(self.connection.close)
 
     def on_connection_open_error(self, connection, err):
+        print(f"Error in opening connection: {err}")
         alert_and_crash(f"Error in opening connection: {err}")
 
     def on_connection_closed(self, connection, reason):
@@ -191,6 +203,7 @@ class ASyncPublisher:
     ):
         with self.publisher_lock:
             while not self.ready:
+                print("Waiting for channel to be ready...")
                 self.publisher_condvar.wait()
 
         publish_fn = functools.partial(
@@ -229,14 +242,18 @@ class ASyncPublisher:
         self.stopped = True
 
         self.connection.ioloop.add_callback_threadsafe(self.connection.ioloop.stop)
+        print("IOLoop stopped")
 
         self.start_publishing_thread.join()
+        print("Stopped publishing messages")
 
         if self.channel is not None:
             self.channel.close()
+            print("Channel closed")
 
         if self.connection is not None:
             self.connection.close()
+            print("Connection closed")
 
 class Publisher:
     def __init__(self, kind):
@@ -263,6 +280,7 @@ class Publisher:
         expiration=None,
         callbacks={},
     ):
+        print(f"Sending the message: {body}")
         if self.kind == "sync":
             self.publisher.send_message(exchange, routing_key, body, expiration)
         elif self.kind == "async":
