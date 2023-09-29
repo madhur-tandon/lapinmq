@@ -9,6 +9,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -26,7 +28,5 @@ jobs:
           pip install wheel
           python setup.py sdist bdist_wheel
 
-      - name: Publish to PyPI
-        run: |
-          pip install twine
-          twine upload --config-file .pypirc dist/* --verbose
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
