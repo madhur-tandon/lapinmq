@@ -39,6 +39,7 @@ Ensure that the following environment variables are set before using the utiliti
 ```py
 import time
 from lapinmq.publisher import Publisher
+from lapinmq.utils import wait_for_sigterm
 
 p = Publisher(kind="sync") # or perhaps p = Publisher(kind="async")
 p.start()
@@ -54,7 +55,8 @@ for i in range(100):
     p.send_message(exchange='', routing_key='task_queue', body='...')
     # no time.sleep() here to showcase 0 wait time between sending messages
 
-# TODO: wait for sigterm here
+sigterm_received = wait_for_sigterm()
+assert sigterm_received
 
 p.stop()
 ```
@@ -74,6 +76,7 @@ If the function raises an exception, that case is treated similar to FAIL_RETRY_
 ```py
 from lapinmq.message import MessageStatus
 from lapinmq.consumer import Consumer
+from lapinmq.utils import wait_for_sigterm
 
 def task(message):
     body = message.body.decode()
@@ -87,7 +90,8 @@ c = Consumer(
 )
 c.start()
 
-# TODO: wait for sigterm here
+sigterm_received = wait_for_sigterm()
+assert sigterm_received
 
 c.stop()
 ```
