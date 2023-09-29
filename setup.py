@@ -12,12 +12,17 @@ def check_tag_version():
         raise Exception(f"Tag '{tag}' does not match the expected "
                         f"version '{expected_version}'")
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 check_tag_version()
 
 setup(
     name='lapinmq',
     version=read_version(),
     description='Utilities for RabbitMQ following best practices',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url='https://github.com/madhur-tandon/lapinmq',
     author='Madhur Tandon',
     author_email='madhurtandon23@gmail.com',
