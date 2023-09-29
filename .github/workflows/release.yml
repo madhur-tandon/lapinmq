@@ -22,7 +22,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Build and package
-        run: python setup.py sdist bdist_wheel
+        run: |
+          pip install wheel
+          python setup.py sdist bdist_wheel
 
       - name: Publish to PyPI
         run: |
