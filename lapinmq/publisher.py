@@ -55,16 +55,15 @@ class SyncPublisher:
 
     def send_message(self, exchange, routing_key, body, expiration=None):
         publish_fn = functools.partial(
-            self.channel.basic_publish(
-                exchange=exchange,
-                routing_key=routing_key,
-                body=body,
-                properties=pika.BasicProperties(
-                    expiration=expiration,
-                    delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE,
-                ),
-                mandatory=True,
-            )
+            self.channel.basic_publish,
+            exchange=exchange,
+            routing_key=routing_key,
+            body=body,
+            properties=pika.BasicProperties(
+                expiration=expiration,
+                delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE,
+            ),
+            mandatory=True,
         )
 
         self.connection.add_callback_threadsafe(publish_fn)
