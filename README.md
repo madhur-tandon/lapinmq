@@ -11,7 +11,7 @@ Install via `pip install lapinmq`
 - Long living consumers and publishers, with their heartbeats in background
 - Multi-threaded consumers that can process messages in parallel with prefetch and manual acknowledgements
 - Option of Asynchronous and Synchronous Publisher Confirmations (for different network latency scenarios) -- details [here](https://www.cloudamqp.com/blog/publishing-throughput-asynchronous-vs-synchronous.html)
-- Ability to coordinate b/w asynchronous publisher confirmations and consumer acknowledgements via callbacks, useful when using 2 or more queues as a pipeline.
+- Ability to coordinate b/w asynchronous publisher confirmations and consumer acknowledgements via callbacks, useful when a consumer is also a publisher.
 - Detection of Unroutable messages i.e. the case where the queue doesn't exist for the exchange and routing key supplied
 
 The utilities are built on top of `pika` -- the official recommended library by the RabbitMQ team.
@@ -381,4 +381,4 @@ While [this article](https://www.cloudamqp.com/blog/publishing-throughput-asynch
 2. We can give 1 note, wait for our friend to confirm that he received it, and only then we are allowed to give him another note, waiting again for his confirmation for the 2nd note and so on... This is the synchronous approach and can get slower if the distance between us and our friend is large (imagine doing this process when the friend lives in another country!). Thus, synchronous publisher confirmations can get very slow in high network latency scenarios, but are also robust since we guarantee that each message that was sent has been received by the broker before another one can be sent.
 3. For the other approach, we can give all 100 notes at once to our friend, and it is upto the friend to give confirmations for the notes -- which he can either give for each note, or in batches or a mix of both. An example can be confirming that he received the first 70 notes, then 1 note, then 1 note, then 25 notes, then 2 notes and then 1 last note i.e. giving 6 confirmations for a total of 100 notes. The only problem is, we don't know when these confirmations will arrive, thus the term asynchronous.
 
-The library has both kinds of publishers and extends help with callbacks if one wishes to use the asynchronous publisher while taking care of solving some timing issues (should be more clear in the upcoming pipeline example).
+The library has both kinds of publishers and extends help with callbacks if one wishes to use the asynchronous publisher while taking care of solving some timing issues (should be more clear in the above example of when a consumer is also a publisher).
