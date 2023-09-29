@@ -34,7 +34,10 @@ class Consumer:
             t.start()
             self.workers.append(t)
 
-        self.start_consuming_thread = threading.Thread(target=self.__start_consuming, daemon=True)
+        self.start_consuming_thread = threading.Thread(
+            target=self.__start_consuming,
+            daemon=True
+        )
         self.start_consuming_thread.start()
 
     def __start_consuming(self):
@@ -98,7 +101,7 @@ class Consumer:
         try:
             try:
                 ret = self.task_function(in_memory_message)
-            except:
+            except Exception:
                 in_memory_message.reject_retry()
                 ret = None
             

@@ -15,7 +15,10 @@ class SyncPublisher:
         self.start_publishing_thread = None
 
     def start(self):
-        self.start_publishing_thread = threading.Thread(target=self.__start_publishing, daemon=True)
+        self.start_publishing_thread = threading.Thread(
+            target=self.__start_publishing,
+            daemon=True
+        )
         self.start_publishing_thread.start()
 
     def __start_publishing(self):
@@ -23,11 +26,15 @@ class SyncPublisher:
             try:
                 self.connection.process_data_events(time_limit=0)
             except pika.exceptions.UnroutableError as e:
-                alert_and_crash(f"Message is unroutable, no queue was bound to the combination of exchange and routing key supplied: {e}")
+                alert_and_crash("Message is unroutable, no queue was bound to"
+                                "the combination of exchange and routing "
+                                f"key supplied: {e}")
             except pika.exceptions.ChannelClosedByBroker as e:
-                alert_and_crash(f"Channel closed by broker. Most probably, the exchange supplied does not exist: {e}")
+                alert_and_crash("Channel closed by broker. Most probably, the "
+                                f"exchange supplied does not exist: {e}")
             except pika.exceptions.ConnectionClosedByBroker as e:
-                alert_and_crash(f"Connection closed by broker. Most probably, RabbitMQ was terminated: {e}")
+                alert_and_crash("Connection closed by broker. Most probably, "
+                                f"RabbitMQ was terminated: {e}")
             except pika.exceptions.ChannelWrongStateError as e:
                 alert_and_crash(f"Cannot publish message. Wrong Channel State: {e}")
             except Exception as e:
@@ -75,7 +82,7 @@ class ASyncPublisher:
 
         self.ready = False
         self.message_number = 1
-        self.messages_with_pending_publisher_confirmations = {}
+        self.messages_with_pending_confirmations = {}
         self.ack_callbacks = {}
         self.nack_callbacks = {}
 
@@ -105,7 +112,8 @@ class ASyncPublisher:
             self.publisher_condvar.notify_all()
 
     def on_channel_return(self, ch, method, properties, body):
-        alert_and_crash("Message is unroutable, no queue was bound to the combination of exchange and routing key supplied.")
+        alert_and_crash("Message is unroutable, no queue was bound to the "
+                        "combination of exchange and routing key supplied.")
 
     def on_delivery_confirmation(self, frame):
         confirmation_type = frame.method
@@ -127,14 +135,14 @@ class ASyncPublisher:
         with self.publisher_lock:
             if multiple:
                 for each_tag in list(
-                    self.messages_with_pending_publisher_confirmations.keys()
+                    self.messages_with_pending_confirmations.keys()
                 ):
                     if each_tag <= delivery_tag:
                         call_ack_or_nack_callback(confirmation_type, each_tag)
-                        del self.messages_with_pending_publisher_confirmations[each_tag]
+                        del self.messages_with_pending_confirmations[each_tag]
             else:
                 call_ack_or_nack_callback(confirmation_type, delivery_tag)
-                del self.messages_with_pending_publisher_confirmations[delivery_tag]
+                del self.messages_with_pending_confirmations[delivery_tag]
 
     def on_channel_closed(self, channel, reason):
         self.connection.ioloop.add_callback_threadsafe(self.connection.close)
@@ -168,7 +176,7 @@ class ASyncPublisher:
         )
 
         with self.publisher_lock:
-            self.messages_with_pending_publisher_confirmations[self.message_number] = body
+            self.messages_with_pending_confirmations[self.message_number] = body
             self.ack_callbacks[self.message_number] = callbacks.get('ack_callback')
             self.nack_callbacks[self.message_number] = callbacks.get('nack_callback')
             self.message_number += 1
@@ -208,7 +216,10 @@ class ASyncPublisher:
         )
 
     def start(self):
-        self.start_publishing_thread = threading.Thread(target=self.__start_publishing, daemon=True)
+        self.start_publishing_thread = threading.Thread(
+            target=self.__start_publishing,
+            daemon=True
+        )
         self.start_publishing_thread.start()
 
     def __start_publishing(self):
@@ -235,7 +246,8 @@ class Publisher:
         elif self.kind == "async":
             self.publisher = ASyncPublisher()
         else:
-            raise ValueError(f"kind can have the following values: [sync, async], supplied value is {self.kind}")
+            raise ValueError("kind can have the following values: "
+                             f"[sync, async], supplied value is {self.kind}")
 
     def start(self):
         self.publisher.start()
@@ -254,7 +266,13 @@ class Publisher:
         if self.kind == "sync":
             self.publisher.send_message(exchange, routing_key, body, expiration)
         elif self.kind == "async":
-            self.publisher.send_message(exchange, routing_key, body, expiration, callbacks)
+            self.publisher.send_message(
+                exchange,
+                routing_key,
+                body,
+                expiration,
+                callbacks
+            )
 
     def send_message_to_queue(
         self, queue_name, body, expiration=None, callbacks={}

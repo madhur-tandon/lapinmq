@@ -22,6 +22,15 @@ class InMemoryMessage:
             ch.basic_reject, delivery_tag=method.delivery_tag, requeue=True
         )
 
-        self.ack = functools.partial(ch.connection.add_callback_threadsafe, basic_ack_fn)
-        self.reject = functools.partial(ch.connection.add_callback_threadsafe, basic_reject_fn)
-        self.reject_retry = functools.partial(ch.connection.add_callback_threadsafe, basic_reject_fn_with_retry)
+        self.ack = functools.partial(
+            ch.connection.add_callback_threadsafe,
+            basic_ack_fn
+        )
+        self.reject = functools.partial(
+            ch.connection.add_callback_threadsafe,
+            basic_reject_fn
+        )
+        self.reject_retry = functools.partial(
+            ch.connection.add_callback_threadsafe,
+            basic_reject_fn_with_retry
+        )

@@ -15,7 +15,10 @@ def get_parameters(blocked_connection_timeout=3600):
     return pika.ConnectionParameters(
         host=os.getenv("RABBITMQ_HOST"),
         port=os.getenv("RABBITMQ_PORT", 5672),
-        credentials=pika.PlainCredentials(os.getenv("RABBITMQ_USERNAME"), os.getenv("RABBITMQ_PASSWORD")),
+        credentials=pika.PlainCredentials(
+            os.getenv("RABBITMQ_USERNAME"),
+            os.getenv("RABBITMQ_PASSWORD")
+        ),
         blocked_connection_timeout=blocked_connection_timeout,
     )
 
@@ -33,7 +36,7 @@ class SigtermHandler:
 
     def wait_for_sigterm(self, timeout):
         with self.lock:
-            self.condvar.wait(timeout_secs)
+            self.condvar.wait(timeout)
         return self.sigterm_received
 
 sigterm_handler = SigtermHandler()
