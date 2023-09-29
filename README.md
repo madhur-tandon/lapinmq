@@ -92,6 +92,62 @@ c.start()
 c.stop()
 ```
 
+## Potential Improvements
+
+### Connection Multiplexing with Multiple Channels
+
+[Recommended Reading](https://www.cloudamqp.com/blog/the-relationship-between-connections-and-channels-in-rabbitmq.html)
+
+The one potential improvement is multiplexing of a single AMQP connection with multiple channels.
+
+Consider the following code snippet below:
+
+```py
+from lapinmq.consumer import Consumer
+
+c1 = Consumer(
+    queue_name='preprocessing_task_queue',
+    task_function=task,
+    worker_threads=3 # this consumer can process 3 messages in parallel
+)
+
+c2 = Consumer(
+    queue_name='transcoding_task_queue',
+    task_function=task,
+    worker_threads=5 # this consumer can process 5 messages in parallel
+)
+```
+
+Currently, the library creates 1 connection and 1 channel for each of the consumers defined above.
+Instead, we can create 1 connection and 2 channels instead...
+
+Creating connections is costlier because it is an actual TCP connection
+And they are limited by sockets / file descriptors, etc. that the underlying operating system allows.
+Further, each new TCP connection involves a lot of handshakes etc.
+
+**Impact**
+
+If a pod running inside a kubernetes cluster has X consumers (X=2 in the snippet immediately above) --> X connections and X channels in the current implementation.
+
+If we scale up to 50 pods, then we have 50X consumers --> 50X connections and 50X channels.
+
+But with connection multiplexing, X consumers will mean 1 connection and X channels.
+Thus, while scaling up, 50 pods will mean having 50 connections and 50X channels.
+
+Clearly, the improvement is from 50X to 50 for the number of connections needed.
+
+**Limitation**
+
+`pika` -- the library being used underneath is not thread safe and thus, having one connection per process and by extension, different channels in different threads is not really possible.
+
+The FAQ [here](https://pika.readthedocs.io/en/stable/faq.html) also describes the same and recommends to create one pika connection per thread (already being done in the current implementation).
+
+Thus, this potential improvement is not possible with `pika`.
+
+### Connection Pooling
+
+TODO
+
 ## Appendix
 
 ### Some concepts in simple words:
