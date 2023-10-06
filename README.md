@@ -65,7 +65,7 @@ assert sigterm_received
 p.stop()
 ```
 
-**NOTE:**: It is recommended to configure alternate exchanges if a message is unroutable. This is because `lapinmq` assumes best practices i.e. the publisher is made to crash instead of discarding a message which is unroutable. This is to avoid subsequent dropping of unroutable messages. A crash serves as an instant feedback to look into the issue.
+**NOTE:** It is recommended to configure alternate exchanges if a message is unroutable. This is because `lapinmq` assumes best practices i.e. the publisher is made to crash instead of discarding a message which is unroutable. This is to avoid subsequent dropping of unroutable messages. A crash serves as an instant feedback to look into the issue.
 
 ### Receiving Messages
 
@@ -102,7 +102,7 @@ assert sigterm_received
 c.stop()
 ```
 
-**NOTE:**: One can also pass in an exchange along with binding keys.
+**NOTE:** One can also pass in an exchange along with binding keys.
 
 The following example will make the queue `task_queue` bound to the exchange `color` with the binding keys `black` and `red`.
 
