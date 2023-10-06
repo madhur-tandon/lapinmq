@@ -7,9 +7,19 @@ from lapinmq.utils import get_parameters, alert_and_crash
 from lapinmq.message import InMemoryMessage, MessageStatus
 
 class Consumer:
-    def __init__(self, queue_name, task_function, worker_threads=1):
+    def __init__(self,
+            queue_name,
+            task_function,
+            exchange="",
+            binding_keys=[None],
+            queue_args=None,
+            worker_threads=1,
+        ):
         self.queue_name = queue_name
         self.task_function = task_function
+        self.exchange = exchange
+        self.binding_keys = binding_keys
+        self.queue_args = queue_args
         self.worker_threads = worker_threads
         
         self.consumer_lock = threading.Lock()
@@ -22,6 +32,25 @@ class Consumer:
 
         self.connection = pika.BlockingConnection(get_parameters())
         self.channel = self.connection.channel()
+
+        if len(self.queue_name) == 0:
+            result = self.channel.queue_declare(
+                queue=self.queue_name,
+                exclusive=True,
+                durable=True,
+                arguments=self.queue_args,
+            )
+            self.queue_name = result.method.queue
+            print(f"Created a temporary and exclusive queue: {self.queue_name}")
+
+        if len(self.exchange) != 0:
+            # assumption: the exchange should exist!
+            for each_binding_key in self.binding_keys:
+                self.channel.queue_bind(
+                    exchange=self.exchange,
+                    queue=self.queue_name,
+                    routing_key=each_binding_key,
+                )
 
         self.channel.basic_qos(prefetch_count=self.worker_threads)
         self.consumer_tag = self.channel.basic_consume(

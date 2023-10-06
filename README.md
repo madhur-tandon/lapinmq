@@ -17,9 +17,11 @@ Install via `pip install lapinmq`
 The utilities are built on top of `pika` -- the official recommended library by the RabbitMQ team.
 
 **NOTE:**
-- The library offers simple abstractions for sending and receiving messages and may not cover very advanced cases at the moment.
-- Currently, the popular pattern of `competing consumers in a work queue` is assumed.
-- Temporary queues are not supported yet but may get added in near future.
+- The library offers simple abstractions for sending and receiving messages.
+- Popular patterns of `competing consumers in a work queue`, `publish/subscribe`, `routing`, `topics` are supported.
+- RPC (request/reply) pattern is not implemented yet.
+- Declaration of resources (queues, exchanges, etc.) is not supported. Please make sure these exist beforehand.
+    - Unless we are declaring a temporary exclusive queue.
 - Contributions are welcome for improving codebase, examples, documentation, etc.
 
 ## Why another wrapper for pika?
@@ -63,6 +65,8 @@ assert sigterm_received
 p.stop()
 ```
 
+**NOTE:**: It is recommended to configure alternate exchanges if a message is unroutable. This is because `lapinmq` assumes best practices i.e. the publisher is made to crash instead of discarding a message which is unroutable. This is to avoid subsequent dropping of unroutable messages. A crash serves as an instant feedback to look into the issue.
+
 ### Receiving Messages
 
 To receive messages, create an object of class `lapinmq.Consumer` with the queue name and a task function. One can also pass in the number of workers (default is 1).
@@ -96,6 +100,55 @@ sigterm_received = wait_for_sigterm()
 assert sigterm_received
 
 c.stop()
+```
+
+**NOTE:**: One can also pass in an exchange along with binding keys.
+
+The following example will make the queue `task_queue` bound to the exchange `color` with the binding keys `black` and `red`.
+
+Please make sure that the queue `task_queue` and the exchange `color` exist beforehand.
+
+```py
+c = Consumer(
+    queue_name='task_queue',
+    task_function=task,
+    exchange='color',
+    binding_keys=['black', 'red'],
+    worker_threads=3 # this consumer can process 3 messages in parallel
+)
+```
+
+#### Temporary and Exclusive queues
+
+To work with patterns such as `publish/subscribe`, `routing` and `topics`, one usually needs to create temporary exclusive queues.
+This can be done by passing an empty string to the `queue_name` argument. In this case, the server will choose a random queue name.
+
+Once again, please make sure the exchange `direct_logs` exists beforehand.
+
+```py
+c1 = Consumer(
+    queue_name='',
+    task_function=task_info,
+    exchange='direct_logs',
+    binding_keys=['info'],
+    worker_threads=3
+)
+
+c2 = Consumer(
+    queue_name='',
+    task_function=task_warning,
+    exchange='direct_logs',
+    binding_keys=['info', 'warning'],
+    worker_threads=3
+)
+
+c3 = Consumer(
+    queue_name='',
+    task_function=task_error,
+    exchange='direct_logs',
+    binding_keys=['info', 'warning', 'error'],
+    worker_threads=3
+)
 ```
 
 ---
